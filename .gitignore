@@ -1,0 +1,5 @@
+# Test images (do not commit)
+test-images/
+
+# Build artifact
+*.zip

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+    <children>
+        <!-- Main screen background: dark base + Roughstock logo (watermark style) -->
+        <Rectangle id="mainBgRect" color="0x1a1a1a" width="1280" height="720" />
+        <!-- Logo: roughstock-orig.jpg (or export roughstock.svg to PNG and use that) -->
+        <Poster id="mainBgLogo" uri="pkg:/images/roughstock-orig.jpg" loadDisplayMode="scaleToFit" loadWidth="1280" loadHeight="720" width="1280" height="720" opacity="0.22" />
+        <!-- Mode selection: list of three options (LabelList uses content.title) -->
+        <LabelList id="modeList" translation="[200,200]" itemSize="[880,80]" itemSpacing="[0,10]" visible="true" />
+        <!-- Message when no USB / no content -->
+        <Label id="messageLabel" translation="[100,300]" width="1080" wrap="true" visible="false" />
+        <!-- Settings screen -->
+        <Group id="settingsGroup" visible="false">
+            <Rectangle color="0x1a1a1a" width="1280" height="720" />
+            <Label translation="[200,80]" text="Settings" font="size:36" />
+            <LabelList id="settingsList" translation="[200,160]" itemSize="[880,56]" itemSpacing="[0,8]" />
+        </Group>
+        <!-- Full-screen container for slideshow or video (shown after mode selected) -->
+        <Group id="playbackGroup" visible="false" focusable="true">
+            <Rectangle id="playbackBackground" color="0x000000" width="1280" height="720" />
+            <Poster id="slidePoster" loadDisplayMode="scaleToFit" loadWidth="1280" loadHeight="720" width="1280" height="720" />
+            <Video id="playbackVideo" width="1280" height="720" />
+            <Timer id="slideTimer" repeat="true" duration="10" />
+            <!-- Fade: out then in (slower so more noticeable) -->
+            <Animation id="fadeOutAnim" duration="0.5" easeFunction="linear" repeat="false" control="stop">
+                <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[1.0, 0.0]" fieldToInterp="slidePoster.opacity" />
+            </Animation>
+            <Animation id="fadeInAnim" duration="0.5" easeFunction="linear" repeat="false" control="stop">
+                <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="slidePoster.opacity" />
+            </Animation>
+            <!-- Zoom: scale from 1.2 to 1.0 (more pronounced) -->
+            <Animation id="zoomInAnim" duration="0.55" easeFunction="linear" repeat="false" control="stop">
+                <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.2, 1.2], [1.0, 1.0]]" fieldToInterp="slidePoster.scale" />
+            </Animation>
+            <!-- Slide: translate from right -->
+            <Animation id="slideInAnim" duration="0.45" easeFunction="linear" repeat="false" control="stop">
+                <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1280.0, 0.0], [0.0, 0.0]]" fieldToInterp="slidePoster.translation" />
+            </Animation>
+        </Group>
+    </children>
+</component>
