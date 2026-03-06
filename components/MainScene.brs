@@ -1,7 +1,6 @@
 ' MainScene.brs - USB discovery, mode selection, slideshow, and video playback
 
 sub init()
-    print "[Roughstock] MainScene init() start"
     m.modeList = m.top.findNode("modeList")
     m.messageLabel = m.top.findNode("messageLabel")
     m.settingsGroup = m.top.findNode("settingsGroup")
@@ -26,15 +25,11 @@ sub init()
 
     loadSettings()
     discoverUSB()
-    print "[Roughstock] USB discovery done. photos="; m.photoPaths.Count(); " videos="; m.videoPaths.Count()
     if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
-        print "[Roughstock] No content - showing no USB message"
         showNoUSBMessage()
     else
-        print "[Roughstock] Showing mode list"
         showModeList()
     end if
-    print "[Roughstock] init() done"
 end sub
 
 ' Try ext1 and ext2 for photos/ and videos/; fill m.photoPaths and m.videoPaths
@@ -92,14 +87,12 @@ function listDirectory(path as string) as object
     if fs <> invalid then
         listing = fs.GetDirectory(path)
         if listing <> invalid then
-            print "[Roughstock] listDirectory GetDirectory ok: "; path; " count="; listing.Count()
             return listing
         end if
     end if
     ' Fallback: MatchFiles(path + "*") - common Roku global
     matched = MatchFiles(path, "*")
     if matched <> invalid and matched.Count() > 0 then
-        print "[Roughstock] listDirectory MatchFiles ok: "; path; " count="; matched.Count()
         result = []
         for each p in matched
             ' Strip path to get filename only
@@ -113,7 +106,6 @@ function listDirectory(path as string) as object
         end for
         return result
     end if
-    print "[Roughstock] listDirectory failed: "; path
     return invalid
 end function
 
@@ -275,7 +267,6 @@ sub startPhotoPlayback()
     m.slideIndex = 0
     showCurrentSlide()
     m.playbackGroup.setFocus(true)
-    m.slidePoster.observeField("loadStatus", "onPosterLoadStatus")
     if m.displayMode = "slideshow" then
         m.slideTimer.duration = m.slideSeconds
         m.slideTimer.repeat = (m.playbackOrder = "loop" or m.playbackOrder = "shuffle")
@@ -283,15 +274,6 @@ sub startPhotoPlayback()
         m.slideTimer.control = "start"
     else
         m.slideTimer.control = "stop"
-    end if
-end sub
-
-sub onPosterLoadStatus()
-    status = m.slidePoster.loadStatus
-    if status = "ready" then
-        print "[Roughstock] Poster loadStatus=ready (image now visible) for slideIndex "; m.slideIndex
-    else if status = "failed" then
-        print "[Roughstock] Poster loadStatus=failed for slideIndex "; m.slideIndex
     end if
 end sub
 
@@ -396,7 +378,6 @@ sub onSlideTimerFire()
     m.slideIndex = m.slideIndex + 1
     if m.slideIndex >= m.photoPaths.Count() then
         if m.playbackOrder = "loop" or m.playbackOrder = "shuffle" then
-            print "[Roughstock] slideTimer loop wrap to index 0"
             m.slideIndex = 0
             if m.playbackOrder = "shuffle" then buildPhotoDisplayOrder()
         else
@@ -404,7 +385,6 @@ sub onSlideTimerFire()
             m.slideTimer.control = "stop"
         end if
     end if
-    print "[Roughstock] slideTimer fired, advancing to slideIndex "; m.slideIndex
     runTransitionOrShowSlide()
 end sub
 
