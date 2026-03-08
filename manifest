@@ -11,3 +11,7 @@ ui_resolutions=hd
 
 # Home screen tile (focused state; logo on dark background)
 mm_icon_focus_hd=pkg:/images/tile-hd.png
+
+# Splash: match app background so launch feels smooth
+splash_color=#1a1a1a
+splash_min_time=1500
