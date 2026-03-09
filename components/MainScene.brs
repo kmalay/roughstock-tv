@@ -23,12 +23,30 @@ sub init()
     m.bothPhotoIndex = 0
     m.displayOrder = [] ' shuffled indices when playbackOrder=shuffle
 
+    setScreenSaverSuppressed(false)
     loadSettings()
     discoverUSB()
     if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
         showNoUSBMessage()
     else
         showModeList()
+    end if
+end sub
+
+sub setScreenSaverSuppressed(suppress as boolean)
+    ' Prefer Scene-level control for photo slideshows if supported
+    if m.top <> invalid and m.top.hasField("disableScreenSaver") then
+        m.top.disableScreenSaver = suppress
+    end if
+
+    ' Also set Video-level controls when available
+    if m.playbackVideo <> invalid then
+        if m.playbackVideo.hasField("disableScreenSaver") then
+            m.playbackVideo.disableScreenSaver = suppress
+        end if
+        if m.playbackVideo.hasField("enableScreenSaverWhilePlaying") then
+            m.playbackVideo.enableScreenSaverWhilePlaying = not suppress
+        end if
     end if
 end sub
 
@@ -260,6 +278,7 @@ sub startPhotoPlayback()
     end if
     m.slidePoster.visible = true
     m.playbackVideo.visible = false
+    setScreenSaverSuppressed(true)
     m.slidePoster.opacity = 1.0
     m.slidePoster.scale = [1.0, 1.0]
     m.slidePoster.translation = [0.0, 0.0]
@@ -407,6 +426,7 @@ sub startVideoPlayback()
     end if
     m.slidePoster.visible = false
     m.playbackVideo.visible = true
+    setScreenSaverSuppressed(true)
     m.videoIndex = 0
     playCurrentVideo()
     m.playbackVideo.observeField("state", "onVideoStateChange")
@@ -439,6 +459,7 @@ sub startBothMode()
         showNoContentAndReturn()
         return
     end if
+    setScreenSaverSuppressed(true)
     m.bothPhotoIndex = 0
     m.playbackGroup.setFocus(true)
     runBothModeStep()
@@ -521,6 +542,7 @@ end function
 sub returnToMainScreen()
     m.slideTimer.control = "stop"
     m.playbackVideo.control = "stop"
+    setScreenSaverSuppressed(false)
     m.playbackGroup.visible = false
     m.modeList.visible = true
     m.modeList.setFocus(true)
