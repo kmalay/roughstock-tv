@@ -14,12 +14,12 @@ USB root/
     └── announcements.txt   ← optional; text shown on the timer screen (class announcements)
 ```
 
-Use FAT32 or NTFS. Plug the USB into the Roku TV’s USB port.  
+Use FAT32 or NTFS. Plug the USB into the Roku TV’s USB port. The channel checks both `ext1:/` and `ext2:/` for these folders.  
 If you copy files from a Mac, it may create hidden `._` files (e.g. `._image.png`); the app skips these and only shows real images.
 
 ## Viewing logs (debugging)
 
-When the channel shows a blank screen or misbehaves, use the **BrightScript debug console** to see `print` output and errors:
+When the channel shows a blank screen or misbehaves, use the **BrightScript debug console** to see runtime errors and any `print` output:
 
 1. **Enable developer mode on the Roku**
    - Settings → System → Developer options (or enter your Roku’s IP in a browser and use “Developer Application Installer”).
@@ -29,21 +29,13 @@ When the channel shows a blank screen or misbehaves, use the **BrightScript debu
    - **Mac (no telnet):** use netcat (built in):  
      `nc <ROKU_IP> 8085`  
      Example: `nc 192.168.1.100 8085`  
-     Logs appear in the terminal. Press **Ctrl+C** to disconnect.
+     Output appears in the terminal. Press **Ctrl+C** to disconnect.
    - **Mac or Linux (with telnet):** `telnet <ROKU_IP> 8085`
    - **Windows:** enable “Telnet Client” in Settings, or use PuTTY (Telnet, port 8085).
 
 3. **Reproduce the issue**
-   - Launch Roughstock TV again. You should see lines like:
-     - `[Roughstock] Main() start`
-     - `[Roughstock] Creating MainScene`
-     - `[Roughstock] MainScene init() start`
-     - `[Roughstock] listDirectory ...` or `listDirectory failed: ext1:/photos/`
-     - `[Roughstock] USB discovery done. photos=0 videos=0`
-     - etc.
-   - Any runtime error or crash will appear here too.
-
-If you don’t see any output, the channel may not be loading (check that you installed the latest zip and launched “Roughstock TV”). If connection to 8085 is refused, ensure developer mode is on and try rebooting the Roku.
+   - Launch Roughstock TV again. The channel does not emit debug logs by default; you will see runtime errors and crashes if they occur. Add `print` statements in the BrightScript code if you need trace output.
+   - If you don’t see any output, the channel may not be loading (check that you installed the latest zip and launched “Roughstock TV”). If connection to 8085 is refused, ensure developer mode is on and try rebooting the Roku.
 
 ## Run the channel
 
@@ -68,6 +60,22 @@ Then install the zip as a developer channel on your Roku TV.
 
 Place PNG images in `images/sponsors/` (e.g. `sponsor1.png`, `sponsor2.png`) to show on the timer screen. Enable "Sponsors: Yes" in Timer settings.
 
+## Media (slideshow) settings
+
+From the media mode list (after choosing “Scrolling photos & videos”), select **Settings** to adjust:
+
+- **Display** – Slideshow (auto-advance) or one-at-a-time (use remote left/right to change image).
+- **Seconds per slide** – 5, 10, 15, 20, 30, 45, or 60.
+- **Order** – Loop (sequence) or Shuffle.
+- **Transition** – None, Fade, Zoom in, Slide, or Random.
+
+Choose “Save and Back” to return to the mode list.
+
+## Navigation
+
+- **Back**: From the timer screen → home. From timer settings → timer screen. From the media mode list → home. From playback (photos/videos) → media mode list. From the no-USB or no-content message → home.
+- **Options** or **\*** on the timer screen opens Timer settings.
+
 ## Project layout
 
 - `manifest` – Channel metadata and version
@@ -76,10 +84,11 @@ Place PNG images in `images/sponsors/` (e.g. `sponsor1.png`, `sponsor2.png`) to 
 - `images/rjj-logo.png` – Timer screen background (Roughstock Jiu Jitsu).
 - `images/sponsors/` – Optional sponsor logos for the timer (e.g. `sponsor1.png`, `sponsor2.png`).
 - `components/MainScene.xml` – UI: home list, mode list, timer group, poster, video, timer
-- `components/MainScene.brs` – USB discovery (`ext1:/`, `ext2:/`), mode handling, slideshow, video playlist, “both” mode
+- `components/MainScene.brs` – USB discovery (ext1/ext2), home and mode list, media playback (photos/videos/both), media settings, round timer and timer settings, key handling
 
 ## Notes
 
-- **USB path**: Roku exposes the first USB drive as `ext1:/`. The channel looks for `Photos/` and `Videos/` (capital P and V) at the root and builds playlists from supported file extensions.
-- **Home screen**: On launch you choose "Scrolling photos & videos" or "Round timer". If you choose media and no USB/content is found, the channel shows instructions to insert a USB with `Photos` and `Videos` folders. The round timer works without USB.
-- Slide duration is 10 seconds; “Both” mode shows 5 photos then one video, then repeats.
+- **USB path**: Roku exposes USB drives as `ext1:/` and `ext2:/`. The channel checks both and looks for `Photos/` and `Videos/` (capital P and V) at the root, plus `Roughstock/announcements.txt` for the timer. Playlists use supported file extensions only.
+- **Home screen**: On launch you choose "Scrolling photos & videos" or "Round timer". If you choose media and no USB or no content is found, the channel shows instructions to insert a USB with `Photos` and `Videos` folders. The round timer works without USB.
+- If you choose “Photos only” or “Videos only” and that folder is empty (or missing), the channel shows a short message (e.g. “No photos found…”) and returns to the mode list so you can pick another mode or go Back to home.
+- Default slide duration is 10 seconds (configurable in Settings from 5–60 sec). “Both” mode shows 5 photos then one video, then repeats.
