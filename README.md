@@ -53,7 +53,7 @@ Then install the zip as a developer channel on your Roku TV.
 
 ## Round timer
 
-- **Timer screen**: Roughstock Jiu Jitsu logo (background), round/rest countdown, round number, "Next round in" during rest, optional current time, optional sponsor logos, class announcements (from USB `Roughstock/announcements.txt` if present).
+- **Timer screen**: Roughstock logo (background, same as main screen), round/rest countdown, round number, "Next round in" during rest, optional current time, optional sponsor logos, class announcements (from USB `Roughstock/announcements.txt` if present).
 - **Timer settings** (open with **Options** or **\*** on the timer screen): show sponsor logos, font size (small/medium/large), show current time, font color (white/yellow/red/green), round duration (1/3/5 min), rest between rounds (30/60/90 sec). **Back** from timer returns to the home screen.
 
 ## Sponsor logos
@@ -81,7 +81,7 @@ Choose “Save and Back” to return to the mode list.
 - `manifest` – Channel metadata and version
 - `images/roughstock-orig.jpg` – Main screen background logo (watermark). Roku doesn’t support SVG; to use `roughstock.svg` instead, export it to PNG (e.g. 1280×720), save as `images/roughstock-bg.png`, and in `MainScene.xml` set `mainBgLogo`’s `uri` to `pkg:/images/roughstock-bg.png`.
 - `source/main.brs` – Entry point, creates SceneGraph screen and MainScene
-- `images/rjj-logo.png` – Timer screen background (Roughstock Jiu Jitsu).
+- `images/roughstock-bg-16x9.jpg` – Main and timer screen background logo (watermark).
 - `images/sponsors/` – Optional sponsor logos for the timer (e.g. `sponsor1.png`, `sponsor2.png`).
 - `components/MainScene.xml` – UI: home list, mode list, timer group, poster, video, timer
 - `components/MainScene.brs` – USB discovery (ext1/ext2), home and mode list, media playback (photos/videos/both), media settings, round timer and timer settings, key handling
