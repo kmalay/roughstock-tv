@@ -1,15 +1,17 @@
 # Roughstock TV
 
-Roku channel for displaying photos and videos from a USB thumb drive (e.g. gym info, ads, pricing on a TV). Supports **Photos only**, **Videos only**, or **Both** modes.
+Roku channel for displaying photos and videos from a USB thumb drive (e.g. gym info, ads, pricing on a TV), and a **round timer** for jiu jitsu/wrestling. From the home screen choose **Scrolling photos & videos** (Photos only, Videos only, or Both) or **Round timer**.
 
 ## USB layout
 
-At the **root** of the USB drive create two folders with exactly these names (capital P and V):
+At the **root** of the USB drive create folders with exactly these names (capital P and V for media):
 
 ```
 USB root/
-├── Photos/   ← .jpg, .png, .gif
-└── Videos/   ← .mp4, .mkv, .mov
+├── Photos/     ← .jpg, .png, .gif
+├── Videos/     ← .mp4, .mkv, .mov
+└── Roughstock/
+    └── announcements.txt   ← optional; text shown on the timer screen (class announcements)
 ```
 
 Use FAT32 or NTFS. Plug the USB into the Roku TV’s USB port.  
@@ -57,16 +59,27 @@ zip -r roughstock-tv.zip manifest source components images
 
 Then install the zip as a developer channel on your Roku TV.
 
+## Round timer
+
+- **Timer screen**: Roughstock Jiu Jitsu logo (background), round/rest countdown, round number, "Next round in" during rest, optional current time, optional sponsor logos, class announcements (from USB `Roughstock/announcements.txt` if present).
+- **Timer settings** (open with **Options** or **\*** on the timer screen): show sponsor logos, font size (small/medium/large), show current time, font color (white/yellow/red/green), round duration (1/3/5 min), rest between rounds (30/60/90 sec). **Back** from timer returns to the home screen.
+
+## Sponsor logos
+
+Place PNG images in `images/sponsors/` (e.g. `sponsor1.png`, `sponsor2.png`) to show on the timer screen. Enable "Sponsors: Yes" in Timer settings.
+
 ## Project layout
 
 - `manifest` – Channel metadata and version
 - `images/roughstock-orig.jpg` – Main screen background logo (watermark). Roku doesn’t support SVG; to use `roughstock.svg` instead, export it to PNG (e.g. 1280×720), save as `images/roughstock-bg.png`, and in `MainScene.xml` set `mainBgLogo`’s `uri` to `pkg:/images/roughstock-bg.png`.
 - `source/main.brs` – Entry point, creates SceneGraph screen and MainScene
-- `components/MainScene.xml` – UI: mode list, message label, poster, video, timer
+- `images/rjj-logo.png` – Timer screen background (Roughstock Jiu Jitsu).
+- `images/sponsors/` – Optional sponsor logos for the timer (e.g. `sponsor1.png`, `sponsor2.png`).
+- `components/MainScene.xml` – UI: home list, mode list, timer group, poster, video, timer
 - `components/MainScene.brs` – USB discovery (`ext1:/`, `ext2:/`), mode handling, slideshow, video playlist, “both” mode
 
 ## Notes
 
 - **USB path**: Roku exposes the first USB drive as `ext1:/`. The channel looks for `Photos/` and `Videos/` (capital P and V) at the root and builds playlists from supported file extensions.
-- If no USB or no content is found, the channel shows instructions to insert a USB with `Photos` and `Videos` folders.
+- **Home screen**: On launch you choose "Scrolling photos & videos" or "Round timer". If you choose media and no USB/content is found, the channel shows instructions to insert a USB with `Photos` and `Videos` folders. The round timer works without USB.
 - Slide duration is 10 seconds; “Both” mode shows 5 photos then one video, then repeats.

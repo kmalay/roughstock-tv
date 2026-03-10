@@ -2,6 +2,7 @@
 
 sub init()
     m.modeList = m.top.findNode("modeList")
+    m.homeList = m.top.findNode("homeList")
     m.messageLabel = m.top.findNode("messageLabel")
     m.settingsGroup = m.top.findNode("settingsGroup")
     m.settingsList = m.top.findNode("settingsList")
@@ -13,6 +14,17 @@ sub init()
     m.fadeInAnim = m.top.findNode("fadeInAnim")
     m.zoomInAnim = m.top.findNode("zoomInAnim")
     m.slideInAnim = m.top.findNode("slideInAnim")
+    m.timerGroup = m.top.findNode("timerGroup")
+    m.timerSettingsGroup = m.top.findNode("timerSettingsGroup")
+    m.timerSettingsList = m.top.findNode("timerSettingsList")
+    m.timerCountdownLabel = m.top.findNode("timerCountdownLabel")
+    m.timerPhaseLabel = m.top.findNode("timerPhaseLabel")
+    m.timerRoundLabel = m.top.findNode("timerRoundLabel")
+    m.timerNextRoundLabel = m.top.findNode("timerNextRoundLabel")
+    m.timerClockLabel = m.top.findNode("timerClockLabel")
+    m.timerSponsorGroup = m.top.findNode("timerSponsorGroup")
+    m.timerAnnouncementsLabel = m.top.findNode("timerAnnouncementsLabel")
+    m.timerTick = m.top.findNode("timerTick")
 
     m.photoPaths = []
     m.videoPaths = []
@@ -24,12 +36,9 @@ sub init()
     m.displayOrder = [] ' shuffled indices when playbackOrder=shuffle
 
     loadSettings()
+    loadTimerSettings()
     discoverUSB()
-    if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
-        showNoUSBMessage()
-    else
-        showModeList()
-    end if
+    showHomeList()
 end sub
 
 sub setScreenSaverSuppressed(suppress as boolean)
@@ -43,6 +52,8 @@ end sub
 
 ' Try ext1 and ext2 for photos/ and videos/; fill m.photoPaths and m.videoPaths
 sub discoverUSB()
+    m.photoPaths = []
+    m.videoPaths = []
     photoExts = { ".jpg": true, ".jpeg": true, ".png": true, ".gif": true }
     videoExts = { ".mp4": true, ".mkv": true, ".mov": true }
 
@@ -88,7 +99,8 @@ sub listVideos(dirPath, allowedExts)
     end for
 end sub
 
-' Return array of file/dir names in the given path, or invalid if not accessible.
+' Return array of file/dir names in the given path, or invalid if not accessible or empty.
+' Empty or missing Photos/Videos folders do not cause errors; listPhotos/listVideos just add nothing.
 ' Must stay render-thread safe in SceneGraph, so use MatchFiles only.
 function listDirectory(path as string) as object
     ' Render-thread safe directory enumeration
@@ -111,14 +123,57 @@ function listDirectory(path as string) as object
 end function
 
 sub showNoUSBMessage()
+    m.homeList.visible = false
     m.modeList.visible = false
     m.messageLabel.visible = true
     m.messageLabel.text = "Insert a USB drive with 'Photos' and 'Videos' folders at the root, then restart the channel."
 end sub
 
+sub showHomeList()
+    m.messageLabel.visible = false
+    m.settingsGroup.visible = false
+    m.modeList.visible = false
+    m.playbackGroup.visible = false
+    m.timerGroup.visible = false
+    m.timerSettingsGroup.visible = false
+    m.homeList.visible = true
+    content = CreateObject("roSGNode", "ContentNode")
+    content.AppendChild(createModeItem("Scrolling photos & videos", "media"))
+    content.AppendChild(createModeItem("Round timer", "timer"))
+    m.homeList.content = content
+    m.homeList.unobserveField("itemSelected")
+    m.homeList.observeField("itemSelected", "onHomeSelected")
+    m.homeList.setFocus(true)
+end sub
+
+sub onHomeSelected()
+    if m.homeList.itemSelected = invalid then return
+    selectedIndex = m.homeList.itemSelected
+    content = m.homeList.content
+    if content = invalid or selectedIndex < 0 or selectedIndex >= content.getChildCount() then return
+    item = content.getChild(selectedIndex)
+    choice = item.id
+
+    m.homeList.visible = false
+
+    if choice = "media" then
+        discoverUSB()
+        if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
+            showNoUSBMessage()
+        else
+            showModeList()
+        end if
+    else if choice = "timer" then
+        startTimerMode()
+    end if
+end sub
+
 sub showModeList()
     m.messageLabel.visible = false
     m.settingsGroup.visible = false
+    m.timerGroup.visible = false
+    m.timerSettingsGroup.visible = false
+    m.homeList.visible = false
     m.modeList.visible = true
     content = CreateObject("roSGNode", "ContentNode")
     content.AppendChild(createModeItem("Photos only", "photos"))
@@ -256,7 +311,7 @@ end sub
 
 sub startPhotoPlayback()
     if m.photoPaths.Count() = 0 then
-        showNoContentAndReturn()
+        showNoContentAndReturn("photos")
         return
     end if
     m.slidePoster.visible = true
@@ -404,7 +459,7 @@ end sub
 
 sub startVideoPlayback()
     if m.videoPaths.Count() = 0 then
-        showNoContentAndReturn()
+        showNoContentAndReturn("videos")
         return
     end if
     m.slidePoster.visible = false
@@ -439,7 +494,7 @@ end sub
 
 sub startBothMode()
     if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
-        showNoContentAndReturn()
+        showNoContentAndReturn("both")
         return
     end if
     setScreenSaverSuppressed(true)
@@ -494,19 +549,56 @@ sub onBothModeVideoState()
     end if
 end sub
 
-sub showNoContentAndReturn()
+' contentType: "photos" | "videos" | "both" — shows a user-friendly message and returns to mode list
+sub showNoContentAndReturn(contentType as string)
     m.playbackGroup.visible = false
     m.messageLabel.visible = true
-    m.messageLabel.text = "No content found. Add images to the 'Photos' folder and videos to the 'Videos' folder on your USB drive."
+    if contentType = "photos" then
+        m.messageLabel.text = "No photos found. Add images (.jpg, .png, .gif) to the 'Photos' folder on your USB drive."
+    else if contentType = "videos" then
+        m.messageLabel.text = "No videos found. Add videos (.mp4, .mkv, .mov) to the 'Videos' folder on your USB drive."
+    else
+        m.messageLabel.text = "No content found. Add images to the 'Photos' folder and videos to the 'Videos' folder on your USB drive."
+    end if
     m.modeList.visible = true
     m.modeList.setFocus(true)
 end sub
 
+sub returnToHome()
+    stopTimerMode()
+    m.timerGroup.visible = false
+    m.timerSettingsGroup.visible = false
+    m.homeList.visible = true
+    m.homeList.setFocus(true)
+end sub
+
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+    if key = "back" and m.timerGroup.visible and not m.timerSettingsGroup.visible then
+        returnToHome()
+        return true
+    end if
+    if key = "back" and m.timerSettingsGroup.visible then
+        closeTimerSettings()
+        return true
+    end if
+    if key = "back" and m.modeList.visible then
+        showHomeList()
+        return true
+    end if
+    if key = "back" and m.messageLabel.visible then
+        showHomeList()
+        return true
+    end if
     if key = "back" and m.playbackGroup.visible then
         returnToMainScreen()
         return true
+    end if
+    if m.timerGroup.visible and not m.timerSettingsGroup.visible then
+        if key = "options" or key = "*" then
+            showTimerSettings()
+            return true
+        end if
     end if
     if m.mode = "photos" and m.playbackGroup.visible and m.photoPaths.Count() > 0 then
         if key = "right" then
@@ -529,6 +621,235 @@ sub returnToMainScreen()
     m.playbackGroup.visible = false
     m.modeList.visible = true
     m.modeList.setFocus(true)
+end sub
+
+' --- Timer (round/rest countdown) ---
+sub loadTimerSettings()
+    sec = CreateObject("roRegistrySection", "RoughstockSettings")
+    if sec.Exists("timer_showSponsors") then m.timer_showSponsors = (sec.Read("timer_showSponsors") = "true") else m.timer_showSponsors = false
+    if sec.Exists("timer_fontSize") then m.timer_fontSize = sec.Read("timer_fontSize") else m.timer_fontSize = "medium"
+    if sec.Exists("timer_showCurrentTime") then m.timer_showCurrentTime = (sec.Read("timer_showCurrentTime") = "true") else m.timer_showCurrentTime = false
+    if sec.Exists("timer_fontColor") then m.timer_fontColor = sec.Read("timer_fontColor") else m.timer_fontColor = "0xFFFFFF"
+    if sec.Exists("timer_roundMinutes") then m.timer_roundMinutes = Val(sec.Read("timer_roundMinutes"), 5) else m.timer_roundMinutes = 5
+    if sec.Exists("timer_restSeconds") then m.timer_restSeconds = Val(sec.Read("timer_restSeconds"), 30) else m.timer_restSeconds = 30
+    if m.timer_roundMinutes <> 1 and m.timer_roundMinutes <> 3 and m.timer_roundMinutes <> 5 then m.timer_roundMinutes = 5
+    if m.timer_restSeconds <> 30 and m.timer_restSeconds <> 60 and m.timer_restSeconds <> 90 then m.timer_restSeconds = 30
+end sub
+
+sub saveTimerSettings()
+    sec = CreateObject("roRegistrySection", "RoughstockSettings")
+    sec.Write("timer_showSponsors", iif(m.timer_showSponsors, "true", "false"))
+    sec.Write("timer_fontSize", m.timer_fontSize)
+    sec.Write("timer_showCurrentTime", iif(m.timer_showCurrentTime, "true", "false"))
+    sec.Write("timer_fontColor", m.timer_fontColor)
+    sec.Write("timer_roundMinutes", Str(m.timer_roundMinutes))
+    sec.Write("timer_restSeconds", Str(m.timer_restSeconds))
+    sec.Flush()
+end sub
+
+sub startTimerMode()
+    loadTimerSettings()
+    applyTimerSettingsToUI()
+    m.timerPhase = "round" ' "round" | "rest"
+    m.timerRoundSeconds = m.timer_roundMinutes * 60
+    m.timerRestSeconds = m.timer_restSeconds
+    m.timerRemaining = m.timerRoundSeconds
+    m.timerRoundNumber = 1
+    m.timerRestRemaining = 0
+    readAnnouncements()
+    m.timerGroup.visible = true
+    m.timerTick.repeat = true
+    m.timerTick.duration = 1
+    m.timerTick.unobserveField("fire")
+    m.timerTick.observeField("fire", "onTimerTick")
+    m.timerTick.control = "start"
+    updateTimerDisplay()
+    m.timerGroup.setFocus(true)
+end sub
+
+sub stopTimerMode()
+    if m.timerTick <> invalid then
+        m.timerTick.unobserveField("fire")
+        m.timerTick.control = "stop"
+    end if
+end sub
+
+sub applyTimerSettingsToUI()
+    m.timerSponsorGroup.visible = m.timer_showSponsors
+    m.timerClockLabel.visible = m.timer_showCurrentTime
+    colorHex = { "0xFFFFFF": &hFFFFFF, "0xFFFF00": &hFFFF00, "0xFF0000": &hFF0000, "0x00FF00": &h00FF00 }
+    c = colorHex[m.timer_fontColor]
+    if c = invalid then c = &hFFFFFF
+    m.timerCountdownLabel.color = c
+    m.timerPhaseLabel.color = c
+    m.timerRoundLabel.color = c
+    m.timerNextRoundLabel.color = c
+    m.timerClockLabel.color = c
+    sizeMap = { "small": 48, "medium": 72, "large": 96 }
+    sz = sizeMap[m.timer_fontSize]
+    if sz = invalid then sz = 72
+    m.timerCountdownLabel.font = "size:" + Str(sz)
+    if m.timer_showCurrentTime then m.timerClockLabel.font = "size:24"
+end sub
+
+' Reads USB Roughstock/announcements.txt if present; missing file or path is OK (no crash).
+sub readAnnouncements()
+    text = ""
+    for each prefix in ["ext1:", "ext2:"]
+        path = prefix + "/Roughstock/announcements.txt"
+        content = ReadAsciiFile(path)
+        if content <> invalid and content <> "" then
+            text = content
+            exit for
+        end if
+    end for
+    if text = invalid then text = ""
+    if m.timerAnnouncementsLabel <> invalid then
+        m.timerAnnouncementsLabel.text = text
+    end if
+end sub
+
+sub onTimerTick()
+    dt = CreateObject("roDateTime")
+    if m.timer_showCurrentTime then
+        h = dt.GetHours()
+        m = dt.GetMinutes()
+        am = "AM"
+        if h >= 12 then am = "PM"
+        if h > 12 then h = h - 12
+        if h = 0 then h = 12
+        m.timerClockLabel.text = Str(h).Trim() + ":" + zeroPad(m) + " " + am
+    end if
+    if m.timerPhase = "rest" then
+        m.timerNextRoundLabel.visible = true
+        m.timerNextRoundLabel.text = "Next round in: " + formatTimerSeconds(m.timerRestRemaining)
+        m.timerRestRemaining = m.timerRestRemaining - 1
+        if m.timerRestRemaining < 0 then
+            m.timerRoundNumber = m.timerRoundNumber + 1
+            m.timerPhase = "round"
+            m.timerRemaining = m.timerRoundSeconds
+            m.timerNextRoundLabel.visible = false
+        end if
+    else
+        m.timerRemaining = m.timerRemaining - 1
+        if m.timerRemaining < 0 then
+            m.timerPhase = "rest"
+            m.timerRestRemaining = m.timer_restSeconds
+            m.timerNextRoundLabel.visible = true
+            m.timerNextRoundLabel.text = "Next round in: " + formatTimerSeconds(m.timerRestRemaining)
+        end if
+    end if
+    updateTimerDisplay()
+end sub
+
+function formatTimerSeconds(sec as integer) as string
+    m = sec \ 60
+    s = sec mod 60
+    return Str(m).Trim() + ":" + zeroPad(s)
+end function
+
+function zeroPad(n as integer) as string
+    if n < 10 then return "0" + Str(n).Trim()
+    return Str(n).Trim()
+end function
+
+sub updateTimerDisplay()
+    m.timerPhaseLabel.text = iif(m.timerPhase = "round", "ROUND", "REST")
+    m.timerRoundLabel.text = "Round " + Str(m.timerRoundNumber).Trim()
+    if m.timerPhase = "round" then
+        m.timerCountdownLabel.text = formatTimerSeconds(m.timerRemaining)
+        m.timerNextRoundLabel.visible = false
+    else
+        m.timerCountdownLabel.text = formatTimerSeconds(m.timerRestRemaining)
+        m.timerNextRoundLabel.visible = true
+        m.timerNextRoundLabel.text = "Next round in: " + formatTimerSeconds(m.timerRestRemaining)
+    end if
+end sub
+
+sub showTimerSettings()
+    m.timerSettingsGroup.visible = true
+    m.timerSettingsList.unobserveField("itemSelected")
+    sponsorsLabel = "Sponsors: " + iif(m.timer_showSponsors, "Yes", "No")
+    sizeLabel = "Font size: " + ucase(left(m.timer_fontSize, 1)) + mid(m.timer_fontSize, 2)
+    clockLabel = "Show current time: " + iif(m.timer_showCurrentTime, "Yes", "No")
+    colorNames = { "0xFFFFFF": "White", "0xFFFF00": "Yellow", "0xFF0000": "Red", "0x00FF00": "Green" }
+    cn = colorNames[m.timer_fontColor]
+    if cn <> invalid then colorLabel = "Font color: " + cn else colorLabel = "Font color: White"
+    roundLabel = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
+    restLabel = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
+    content = CreateObject("roSGNode", "ContentNode")
+    content.AppendChild(createModeItem(sponsorsLabel, "cycle_sponsors"))
+    content.AppendChild(createModeItem(sizeLabel, "cycle_size"))
+    content.AppendChild(createModeItem(clockLabel, "cycle_clock"))
+    content.AppendChild(createModeItem(colorLabel, "cycle_color"))
+    content.AppendChild(createModeItem(roundLabel, "cycle_round"))
+    content.AppendChild(createModeItem(restLabel, "cycle_rest"))
+    content.AppendChild(createModeItem("Save and Back", "timer_save_back"))
+    m.timerSettingsList.content = content
+    m.timerSettingsList.observeField("itemSelected", "onTimerSettingSelected")
+    m.timerSettingsList.setFocus(true)
+end sub
+
+sub closeTimerSettings()
+    m.timerSettingsGroup.visible = false
+    m.timerSettingsList.unobserveField("itemSelected")
+    m.timerGroup.setFocus(true)
+end sub
+
+sub onTimerSettingSelected()
+    if m.timerSettingsList.itemSelected = invalid then return
+    idx = m.timerSettingsList.itemSelected
+    content = m.timerSettingsList.content
+    if content = invalid then return
+    if idx = 0 then
+        m.timer_showSponsors = not m.timer_showSponsors
+        content.getChild(0).title = "Sponsors: " + iif(m.timer_showSponsors, "Yes", "No")
+    else if idx = 1 then
+        arr = ["small", "medium", "large"]
+        for i = 0 to arr.Count() - 1
+            if arr[i] = m.timer_fontSize then
+                m.timer_fontSize = arr[(i + 1) mod arr.Count()]
+                exit for
+            end if
+        end for
+        content.getChild(1).title = "Font size: " + ucase(left(m.timer_fontSize, 1)) + mid(m.timer_fontSize, 2)
+    else if idx = 2 then
+        m.timer_showCurrentTime = not m.timer_showCurrentTime
+        content.getChild(2).title = "Show current time: " + iif(m.timer_showCurrentTime, "Yes", "No")
+    else if idx = 3 then
+        colors = ["0xFFFFFF", "0xFFFF00", "0xFF0000", "0x00FF00"]
+        colorNames = { "0xFFFFFF": "White", "0xFFFF00": "Yellow", "0xFF0000": "Red", "0x00FF00": "Green" }
+        for i = 0 to colors.Count() - 1
+            if colors[i] = m.timer_fontColor then
+                m.timer_fontColor = colors[(i + 1) mod colors.Count()]
+                exit for
+            end if
+        end for
+        content.getChild(3).title = "Font color: " + colorNames[m.timer_fontColor]
+    else if idx = 4 then
+        arr = [1, 3, 5]
+        for i = 0 to arr.Count() - 1
+            if arr[i] = m.timer_roundMinutes then
+                m.timer_roundMinutes = arr[(i + 1) mod arr.Count()]
+                exit for
+            end if
+        end for
+        content.getChild(4).title = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
+    else if idx = 5 then
+        arr = [30, 60, 90]
+        for i = 0 to arr.Count() - 1
+            if arr[i] = m.timer_restSeconds then
+                m.timer_restSeconds = arr[(i + 1) mod arr.Count()]
+                exit for
+            end if
+        end for
+        content.getChild(5).title = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
+    else if idx = 6 then
+        saveTimerSettings()
+        applyTimerSettingsToUI()
+        closeTimerSettings()
+        return
+    end if
 end sub
 
 sub restartSlideTimer()
