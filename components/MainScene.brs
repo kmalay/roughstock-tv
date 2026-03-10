@@ -23,7 +23,6 @@ sub init()
     m.bothPhotoIndex = 0
     m.displayOrder = [] ' shuffled indices when playbackOrder=shuffle
 
-    setScreenSaverSuppressed(false)
     loadSettings()
     discoverUSB()
     if m.photoPaths.Count() = 0 and m.videoPaths.Count() = 0 then
@@ -34,19 +33,11 @@ sub init()
 end sub
 
 sub setScreenSaverSuppressed(suppress as boolean)
-    ' Prefer Scene-level control for photo slideshows if supported
-    if m.top <> invalid and m.top.hasField("disableScreenSaver") then
-        m.top.disableScreenSaver = suppress
-    end if
-
-    ' Also set Video-level controls when available
+    ' Toggle screensaver behavior through Video node controls.
+    ' Some Roku runtimes throw on interface introspection, so avoid hasField checks.
     if m.playbackVideo <> invalid then
-        if m.playbackVideo.hasField("disableScreenSaver") then
-            m.playbackVideo.disableScreenSaver = suppress
-        end if
-        if m.playbackVideo.hasField("enableScreenSaverWhilePlaying") then
-            m.playbackVideo.enableScreenSaverWhilePlaying = not suppress
-        end if
+        m.playbackVideo.disableScreenSaver = suppress
+        m.playbackVideo.enableScreenSaverWhilePlaying = not suppress
     end if
 end sub
 
@@ -98,17 +89,9 @@ sub listVideos(dirPath, allowedExts)
 end sub
 
 ' Return array of file/dir names in the given path, or invalid if not accessible.
-' Tries roFileSystem.GetDirectory (if available) and MatchFiles.
+' Must stay render-thread safe in SceneGraph, so use MatchFiles only.
 function listDirectory(path as string) as object
-    ' Try roFileSystem.GetDirectory first
-    fs = CreateObject("roFileSystem")
-    if fs <> invalid then
-        listing = fs.GetDirectory(path)
-        if listing <> invalid then
-            return listing
-        end if
-    end if
-    ' Fallback: MatchFiles(path + "*") - common Roku global
+    ' Render-thread safe directory enumeration
     matched = MatchFiles(path, "*")
     if matched <> invalid and matched.Count() > 0 then
         result = []

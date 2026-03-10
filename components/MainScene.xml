@@ -11,7 +11,7 @@
         <!-- Mode selection -->
         <LabelList id="modeList" translation="[120,180]" itemSize="[1040,72]" itemSpacing="[0,12]" visible="true" drawFocusFeedback="true" />
         <!-- Message when no USB / no content: centered, readable -->
-        <Label id="messageLabel" translation="[140,280]" width="1000" wrap="true" visible="false" font="size:28" color="0xCCCCCC" horizAlign="center" />
+        <Label id="messageLabel" translation="[140,280]" width="1000" wrap="true" visible="false" font="size:28" color="0x333333" horizAlign="center" />
         <!-- Settings screen -->
         <Group id="settingsGroup" visible="false">
             <Rectangle color="0x1a1a1a" width="1280" height="720" />
