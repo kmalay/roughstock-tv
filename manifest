@@ -4,7 +4,7 @@
 title=Roughstock TV
 major_version=1
 minor_version=0
-build_version=0001
+build_version=0002
 
 # Display in 1280x720, scaled on other resolutions
 ui_resolutions=hd
