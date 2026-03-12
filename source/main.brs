@@ -4,7 +4,7 @@ sub Main()
     screen.setMessagePort(m.port)
 
     ' Scene name must match component file (MainScene.xml -> "MainScene")
-    scene = screen.CreateScene("MainScene")
+    screen.CreateScene("MainScene")
     screen.show()
 
     while true

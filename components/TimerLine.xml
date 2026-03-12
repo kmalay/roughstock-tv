@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TimerLine" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/TimerLine.brs" />
+    <children>
+        <Label id="rowLabel" width="1040" horizAlign="center" vertAlign="center" color="0xE8E8E8" font="size:48" />
+    </children>
+</component>
