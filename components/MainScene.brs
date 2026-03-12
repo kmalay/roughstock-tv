@@ -27,10 +27,13 @@ sub init()
     m.timerSettingsTitleLabel = m.top.findNode("timerSettingsTitleLabel")
     m.timerSettingsList = m.top.findNode("timerSettingsList")
     m.timerSponsorGroup = m.top.findNode("timerSponsorGroup")
-    m.timerAnnouncementsLabel = m.top.findNode("timerAnnouncementsLabel")
+    m.timerAnnouncementsList = m.top.findNode("timerAnnouncementsList")
     m.timerTick = m.top.findNode("timerTick")
     m.timerBeep = m.top.findNode("timerBeep")
     m.timerBeepExtend = m.top.findNode("timerBeepExtend")
+    m.announcementTimer = m.top.findNode("announcementTimer")
+    m.announcementLines = []
+    m.announcementIndex = 0
     if m.timerBeepExtend <> invalid then m.timerBeepExtend.observeField("fire", "onBeepExtendFire")
 
     m.photoPaths = []
@@ -689,6 +692,7 @@ sub loadTimerSettings()
     if sec.Exists("timer_color_clock") then m.timer_color_clock = sec.Read("timer_color_clock") else m.timer_color_clock = "white"
     if sec.Exists("timer_color_countdown") then m.timer_color_countdown = sec.Read("timer_color_countdown") else m.timer_color_countdown = "white"
     if sec.Exists("timer_color_body") then m.timer_color_body = sec.Read("timer_color_body") else m.timer_color_body = "white"
+    if sec.Exists("timer_color_announcements") then m.timer_color_announcements = sec.Read("timer_color_announcements") else m.timer_color_announcements = "white"
     if m.timer_preset = "1_10" then m.timer_roundMinutes = 1 : m.timer_restSeconds = 10
     if m.timer_preset = "2_10" then m.timer_roundMinutes = 2 : m.timer_restSeconds = 10
     if m.timer_preset = "3_10" then m.timer_roundMinutes = 3 : m.timer_restSeconds = 10
@@ -709,6 +713,7 @@ sub saveTimerSettings()
     sec.Write("timer_color_clock", m.timer_color_clock)
     sec.Write("timer_color_countdown", m.timer_color_countdown)
     sec.Write("timer_color_body", m.timer_color_body)
+    sec.Write("timer_color_announcements", m.timer_color_announcements)
     sec.Flush()
 end sub
 
@@ -745,15 +750,31 @@ sub applyTimerFontSizes()
         m.timerCountdownList.scale = [s, s]
         m.timerCountdownList.translation = [cx - halfW * s + nudgeRight, centerY + (countdownRowH / 2.0) * (1.0 - s)]
     end if
-    ' Body "Round N": centered at bottom of screen. scale 1.9
+    ' Body "Round N": just below countdown, centered. scale 1.9
     bodyScale = 1.9
     bodyRowH = 64.0
-    bottomMargin = 50.0
-    bodyVisualCenterY = screenH - bottomMargin
+    gapBelowCountdown = 20.0
+    bodyVisualCenterY = centerY + (countdownRowH * s) / 2.0 + gapBelowCountdown + (bodyRowH * bodyScale) / 2.0
     bodyBaseY = bodyVisualCenterY - bodyRowH / 2.0
     if m.timerBodyList <> invalid then
         m.timerBodyList.scale = [bodyScale, bodyScale]
         m.timerBodyList.translation = [cx - halfW * bodyScale, bodyBaseY + (bodyRowH / 2.0) * (1.0 - bodyScale)]
+    end if
+    ' Announcements: position at bottom (where Round N was)
+    applyTimerAnnouncementsLayout()
+end sub
+
+sub applyTimerAnnouncementsLayout()
+    cx = 640.0
+    halfW = 520.0
+    screenH = 720.0
+    bottomMargin = 50.0
+    annRowH = 48.0
+    annScale = 1.4
+    annBaseY = screenH - bottomMargin - annRowH
+    if m.timerAnnouncementsList <> invalid then
+        m.timerAnnouncementsList.scale = [annScale, annScale]
+        m.timerAnnouncementsList.translation = [cx - halfW * annScale, annBaseY + (annRowH / 2.0) * (1.0 - annScale)]
     end if
 end sub
 
@@ -802,6 +823,10 @@ sub stopTimerMode()
     if m.timerTick <> invalid then
         m.timerTick.unobserveField("fire")
         m.timerTick.control = "stop"
+    end if
+    if m.announcementTimer <> invalid then
+        m.announcementTimer.unobserveField("fire")
+        m.announcementTimer.control = "stop"
     end if
 end sub
 
@@ -867,9 +892,48 @@ sub readAnnouncements()
         end if
     end for
     if text = invalid then text = ""
-    if m.timerAnnouncementsLabel <> invalid then
-        m.timerAnnouncementsLabel.text = text
+    m.announcementLines = []
+    m.announcementIndex = 0
+    if text <> "" then
+        lines = text.Split(chr(10))
+        for each line in lines
+            trimmed = line.Trim()
+            if Len(trimmed) > 0 then m.announcementLines.Push(trimmed)
+        end for
     end if
+    if m.announcementLines.Count() > 0 then
+        showAnnouncementLine(0)
+        if m.timerAnnouncementsList <> invalid then m.timerAnnouncementsList.visible = true
+        if m.announcementTimer <> invalid then
+            m.announcementTimer.unobserveField("fire")
+            m.announcementTimer.observeField("fire", "onAnnouncementTimerFire")
+            m.announcementTimer.control = "start"
+        end if
+    else
+        if m.timerAnnouncementsList <> invalid then m.timerAnnouncementsList.visible = false
+        if m.announcementTimer <> invalid then
+            m.announcementTimer.control = "stop"
+        end if
+    end if
+end sub
+
+sub showAnnouncementLine(idx as integer)
+    if m.timerAnnouncementsList = invalid then return
+    rowWidthPx = 1040
+    TIMER_PX_PER_CHAR = 6
+    w = rowWidthPx \ TIMER_PX_PER_CHAR
+    annNudge = 18
+    annContent = CreateObject("roSGNode", "ContentNode")
+    lineNode = CreateObject("roSGNode", "ContentNode")
+    lineNode.title = centerPad(m.announcementLines[idx], w, annNudge)
+    annContent.AppendChild(lineNode)
+    m.timerAnnouncementsList.content = annContent
+end sub
+
+sub onAnnouncementTimerFire()
+    if m.announcementLines.Count() = 0 then return
+    m.announcementIndex = (m.announcementIndex + 1) mod m.announcementLines.Count()
+    showAnnouncementLine(m.announcementIndex)
 end sub
 
 sub onTimerTick()
@@ -1089,6 +1153,7 @@ sub applyTimerColors()
     if m.timerClockList <> invalid then m.timerClockList.color = getTimerColorHex(m.timer_color_clock)
     if m.timerCountdownList <> invalid then m.timerCountdownList.color = getTimerColorHex(m.timer_color_countdown)
     if m.timerBodyList <> invalid then m.timerBodyList.color = getTimerColorHex(m.timer_color_body)
+    if m.timerAnnouncementsList <> invalid then m.timerAnnouncementsList.color = getTimerColorHex(m.timer_color_announcements)
 end sub
 
 sub showTimerSettings()
@@ -1104,6 +1169,7 @@ sub showTimerSettings()
     content.AppendChild(createModeItem("Clock color: " + getTimerColorLabel(m.timer_color_clock), "cycle_color_clock"))
     content.AppendChild(createModeItem("Timer color: " + getTimerColorLabel(m.timer_color_countdown), "cycle_color_countdown"))
     content.AppendChild(createModeItem("Round line color: " + getTimerColorLabel(m.timer_color_body), "cycle_color_body"))
+    content.AppendChild(createModeItem("Announcements color: " + getTimerColorLabel(m.timer_color_announcements), "cycle_color_announcements"))
     content.AppendChild(createModeItem("Round duration: " + Str(m.timer_roundMinutes).Trim() + " min", "cycle_round"))
     content.AppendChild(createModeItem("Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec", "cycle_rest"))
     content.AppendChild(createModeItem("Save and Back", "timer_save_back"))
@@ -1141,8 +1207,8 @@ sub onTimerSettingSelected()
         if m.timer_preset = "2_10" then m.timer_roundMinutes = 2 : m.timer_restSeconds = 10
         if m.timer_preset = "3_10" then m.timer_roundMinutes = 3 : m.timer_restSeconds = 10
         content.getChild(0).title = getTimerPresetLabel()
-        content.getChild(8).title = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
-        content.getChild(9).title = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
+        content.getChild(9).title = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
+        content.getChild(10).title = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
     else if id = "cycle_sponsors" then
         m.timer_showSponsors = not m.timer_showSponsors
         content.getChild(1).title = "Sponsors: " + iif(m.timer_showSponsors, "Yes", "No")
@@ -1175,6 +1241,10 @@ sub onTimerSettingSelected()
         m.timer_color_body = getNextTimerColorKey(m.timer_color_body)
         content.getChild(7).title = "Round line color: " + getTimerColorLabel(m.timer_color_body)
         applyTimerColors()
+    else if id = "cycle_color_announcements" then
+        m.timer_color_announcements = getNextTimerColorKey(m.timer_color_announcements)
+        content.getChild(8).title = "Announcements color: " + getTimerColorLabel(m.timer_color_announcements)
+        applyTimerColors()
     else if id = "cycle_round" then
         m.timer_preset = "custom"
         arr = [1, 2, 3, 5]
@@ -1185,7 +1255,7 @@ sub onTimerSettingSelected()
             end if
         end for
         content.getChild(0).title = getTimerPresetLabel()
-        content.getChild(8).title = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
+        content.getChild(9).title = "Round duration: " + Str(m.timer_roundMinutes).Trim() + " min"
     else if id = "cycle_rest" then
         m.timer_preset = "custom"
         arr = [10, 30, 60, 90]
@@ -1196,7 +1266,7 @@ sub onTimerSettingSelected()
             end if
         end for
         content.getChild(0).title = getTimerPresetLabel()
-        content.getChild(9).title = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
+        content.getChild(10).title = "Rest between rounds: " + Str(m.timer_restSeconds).Trim() + " sec"
     else if id = "timer_save_back" then
         saveTimerSettings()
         applyTimerSettingsToUI()

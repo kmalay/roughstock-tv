@@ -55,8 +55,9 @@
                 <Poster id="timerSponsor1" loadDisplayMode="scaleToFit" width="200" height="80" uri="pkg:/images/sponsors/sponsor1.png" />
                 <Poster id="timerSponsor2" loadDisplayMode="scaleToFit" width="200" height="80" translation="[300,0]" uri="pkg:/images/sponsors/sponsor2.png" />
             </Group>
-            <Label id="timerAnnouncementsLabel" translation="[120,640]" width="1040" wrap="true" text="" font="size:22" color="0xAAAAAA" />
+            <LabelList id="timerAnnouncementsList" translation="[120,600]" itemSize="[1040,48]" itemSpacing="[0,0]" focusable="false" drawFocusFeedback="false" />
             <Timer id="timerTick" repeat="true" duration="1" />
+            <Timer id="announcementTimer" repeat="true" duration="10" />
         </Group>
         <!-- Timer settings: same logo + title as main, then list -->
         <Group id="timerSettingsGroup" visible="false">
