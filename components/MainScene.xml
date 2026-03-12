@@ -66,8 +66,6 @@
             <Label id="timerSettingsTitleLabel" translation="[120,50]" width="1040" font="size:44" color="0xE8E8E8" horizAlign="center" text="Roughstock TV" />
             <LabelList id="timerSettingsList" translation="[120,120]" itemSize="[1040,64]" itemSpacing="[0,10]" drawFocusFeedback="true" />
         </Group>
-        <!-- Beep Audio at Scene level; content preloaded. BeepExtend restarts every 1s to work around 1s playback limit (3x1s = 3s). -->
         <Audio id="timerBeep" />
-        <Timer id="timerBeepExtend" repeat="true" duration="1" />
     </children>
 </component>

@@ -83,7 +83,7 @@ Choose “Save and Back” to return to the mode list.
 - `source/main.brs` – Entry point, creates SceneGraph screen and MainScene
 - `images/roughstock-bg-16x9.jpg` – Main and timer screen background logo (watermark).
 - `images/sponsors/` – Optional sponsor logos for the timer (e.g. `sponsor1.png`, `sponsor2.png`).
-- `sounds/beep.m4a` – Short beep (AAC) when a round or rest ends. **Option A – generate with ffmpeg:** (1) Install ffmpeg: `brew install ffmpeg` (if Homebrew says directories are not writable, run the `sudo chown` command it suggests, then retry). (2) From the project root run: `./scripts/generate_beep_m4a.sh`. (3) Include the `sounds/` folder (with `beep.m4a`) in your channel zip.
+- `sounds/beep.m4a` – 3-second continuous beep (AAC) played when a round or rest ends. **Generate with ffmpeg:** (1) Install ffmpeg: `brew install ffmpeg` (if Homebrew says directories are not writable, run the `sudo chown` command it suggests, then retry). (2) From the project root run: `./scripts/generate_beep_m4a.sh`. (3) Include the `sounds/` folder (with `beep.m4a`) in your channel zip.
 - `components/MainScene.xml` – UI: home list, mode list, timer group, poster, video, timer
 - `components/MainScene.brs` – USB discovery (ext1/ext2), home and mode list, media playback (photos/videos/both), media settings, round timer and timer settings, key handling
 

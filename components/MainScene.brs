@@ -30,11 +30,9 @@ sub init()
     m.timerAnnouncementsList = m.top.findNode("timerAnnouncementsList")
     m.timerTick = m.top.findNode("timerTick")
     m.timerBeep = m.top.findNode("timerBeep")
-    m.timerBeepExtend = m.top.findNode("timerBeepExtend")
     m.announcementTimer = m.top.findNode("announcementTimer")
     m.announcementLines = []
     m.announcementIndex = 0
-    if m.timerBeepExtend <> invalid then m.timerBeepExtend.observeField("fire", "onBeepExtendFire")
 
     m.photoPaths = []
     m.videoPaths = []
@@ -830,36 +828,24 @@ sub stopTimerMode()
     end if
 end sub
 
-' Preload beep content when timer screen is shown so full 3s file is buffered before first play.
+' Preload and prebuffer the 3-second tone so the Audio node can play it in full.
 sub initTimerBeep()
     if m.timerBeep = invalid then return
     content = CreateObject("roSGNode", "ContentNode")
     content.url = "pkg:/sounds/beep.m4a"
     m.timerBeep.content = content
+    m.timerBeep.control = "prebuffer"
 end sub
 
-' Play beep: work around Roku playing only ~1s by restarting at 1s and 2s so we get 3 seconds of sound.
+' Play the full 3-second tone. The file contains continuous audio throughout
+' so the Audio node plays the complete duration without cutting short.
 ' Skip if we started a beep within last 3 ticks so a short rest doesn't cut off the previous beep.
 sub playTimerBeep()
     if m.timerBeep = invalid then return
     if m.lastBeepTick <> invalid and (m.timerTickCount - m.lastBeepTick) < 3 then return
     m.lastBeepTick = m.timerTickCount
-    m.beepExtendCount = 0
     m.timerBeep.control = "stop"
     m.timerBeep.control = "play"
-    if m.timerBeepExtend <> invalid then
-        m.timerBeepExtend.control = "stop"
-        m.timerBeepExtend.control = "start"
-    end if
-end sub
-
-' Fire at 1s and 2s: restart beep each time so we get 3 x 1s = 3 seconds. After 2nd restart, stop timer.
-sub onBeepExtendFire()
-    if m.timerBeep = invalid or m.timerBeepExtend = invalid then return
-    m.beepExtendCount = m.beepExtendCount + 1
-    m.timerBeep.control = "stop"
-    m.timerBeep.control = "play"
-    if m.beepExtendCount >= 2 then m.timerBeepExtend.control = "stop"
 end sub
 
 sub setTimerScreenVisible(visible as boolean)
