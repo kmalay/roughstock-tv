@@ -8,10 +8,9 @@ At the **root** of the USB drive create folders with exactly these names (capita
 
 ```
 USB root/
-├── Photos/     ← .jpg, .png, .gif
-├── Videos/     ← .mp4, .mkv, .mov
-└── Roughstock/
-    └── announcements.txt   ← optional; text shown on the timer screen (class announcements)
+├── Photos/           ← .jpg, .png, .gif
+├── Videos/            ← .mp4, .mkv, .mov
+└── announcements.txt ← optional; text shown on the timer screen (class announcements)
 ```
 
 Use FAT32 or NTFS. Plug the USB into the Roku TV’s USB port. The channel checks both `ext1:/` and `ext2:/` for these folders.  
@@ -40,21 +39,22 @@ When the channel shows a blank screen or misbehaves, use the **BrightScript debu
 ## Run the channel
 
 1. Install [Roku Developer SDK](https://developer.roku.com/docs/developer-program/getting-started/roku-dev-prog.md) and enable Developer Application Installer on your Roku device.
-2. Zip the channel (manifest, source/, components/, images/ at the root of the zip).
+2. Zip the channel (manifest, source/, components/, images/, sounds/ at the root of the zip).
 3. Sideload via the Roku developer dashboard or `curl` to your device’s plugin_install endpoint.
 
 Example zip from project root:
 
 ```bash
-zip -r roughstock-tv.zip manifest source components images
+zip -r roughstock-tv.zip manifest source components images sounds
 ```
 
 Then install the zip as a developer channel on your Roku TV.
 
 ## Round timer
 
-- **Timer screen**: Roughstock logo (background, same as main screen), round/rest countdown, round number, "Next round in" during rest, optional current time, optional sponsor logos, class announcements (from USB `Roughstock/announcements.txt` if present).
-- **Timer settings** (open with **Options** or **\*** on the timer screen): show sponsor logos, font size (small/medium/large), show current time, font color (white/yellow/red/green), round duration (1/3/5 min), rest between rounds (30/60/90 sec). **Back** from timer returns to the home screen.
+- **Timer screen**: Roughstock logo (background, same as main screen), round/rest countdown, round number, "Next round in" during rest, optional current time, optional sponsor logos, class announcements (from USB root `announcements.txt` if present). A short **beep** plays when a round or rest period ends.
+- **Timer settings** (open with **Options** or **\*** on the timer screen): **Preset** (Custom, 1 min/10 s rest, 2 min/10 s rest, 3 min/10 s rest), show sponsor logos, font size (small/medium/large), show current time, font color (white/yellow/red/green), round duration (1/2/3/5 min), rest between rounds (10/30/60/90 sec). **Back** from timer returns to the home screen.
+- **Remote on timer**: **Play** = pause or resume the round/rest. **Right** = jump to next (round → rest, or rest → next round). **Left** = jump to previous (rest → current round, or round → previous rest).
 
 ## Sponsor logos
 
@@ -83,12 +83,13 @@ Choose “Save and Back” to return to the mode list.
 - `source/main.brs` – Entry point, creates SceneGraph screen and MainScene
 - `images/roughstock-bg-16x9.jpg` – Main and timer screen background logo (watermark).
 - `images/sponsors/` – Optional sponsor logos for the timer (e.g. `sponsor1.png`, `sponsor2.png`).
+- `sounds/beep.m4a` – Short beep (AAC) when a round or rest ends. **Option A – generate with ffmpeg:** (1) Install ffmpeg: `brew install ffmpeg` (if Homebrew says directories are not writable, run the `sudo chown` command it suggests, then retry). (2) From the project root run: `./scripts/generate_beep_m4a.sh`. (3) Include the `sounds/` folder (with `beep.m4a`) in your channel zip.
 - `components/MainScene.xml` – UI: home list, mode list, timer group, poster, video, timer
 - `components/MainScene.brs` – USB discovery (ext1/ext2), home and mode list, media playback (photos/videos/both), media settings, round timer and timer settings, key handling
 
 ## Notes
 
-- **USB path**: Roku exposes USB drives as `ext1:/` and `ext2:/`. The channel checks both and looks for `Photos/` and `Videos/` (capital P and V) at the root, plus `Roughstock/announcements.txt` for the timer. Playlists use supported file extensions only.
+- **USB path**: Roku exposes USB drives as `ext1:/` and `ext2:/`. The channel checks both and looks for `Photos/` and `Videos/` (capital P and V) at the root, plus `announcements.txt` at the root for the timer. Playlists use supported file extensions only.
 - **Home screen**: On launch you choose "Scrolling photos & videos" or "Round timer". If you choose media and no USB or no content is found, the channel shows instructions to insert a USB with `Photos` and `Videos` folders. The round timer works without USB.
 - If you choose “Photos only” or “Videos only” and that folder is empty (or missing), the channel shows a short message (e.g. “No photos found…”) and returns to the mode list so you can pick another mode or go Back to home.
 - Default slide duration is 10 seconds (configurable in Settings from 5–60 sec). “Both” mode shows 5 photos then one video, then repeats.

@@ -6,20 +6,20 @@
         <Rectangle id="mainBgRect" color="0x1a1a1a" width="1280" height="720" />
         <!-- Logo: 16:9 image with white side padding so it fills the screen without black bars -->
         <Poster id="mainBgLogo" loadDisplayMode="scaleToFit" width="1280" height="720" opacity="0.22" uri="pkg:/images/roughstock-bg-16x9.jpg" />
-        <!-- Main title: clear hierarchy, TV-safe -->
-        <Label id="mainTitle" translation="[120,100]" text="Roughstock TV" font="size:42" color="0xE8E8E8" visible="true" />
-        <!-- Home: choose Media or Timer -->
-        <LabelList id="homeList" translation="[120,180]" itemSize="[1040,72]" itemSpacing="[0,12]" visible="false" drawFocusFeedback="true" />
+        <!-- Main title (Option A: single Label, centered) -->
+        <Label id="mainTitleLabel" translation="[120,80]" width="1040" font="size:44" color="0xE8E8E8" horizAlign="center" visible="false" />
+        <!-- Home menu: centered vertically -->
+        <LabelList id="homeList" translation="[120,282]" itemSize="[1040,72]" itemSpacing="[0,12]" visible="false" drawFocusFeedback="true" />
         <!-- Mode selection (Photos / Videos / Both / Settings) -->
         <LabelList id="modeList" translation="[120,180]" itemSize="[1040,72]" itemSpacing="[0,12]" visible="false" drawFocusFeedback="true" />
         <!-- Message when no USB / no content: centered, readable -->
         <Label id="messageLabel" translation="[140,280]" width="1000" wrap="true" visible="false" font="size:28" color="0xE8E8E8" horizAlign="center" />
-        <!-- Settings screen -->
+        <!-- Settings: same logo + title as main, then list (consistent with every page) -->
         <Group id="settingsGroup" visible="false">
             <Rectangle color="0x1a1a1a" width="1280" height="720" />
-            <Label translation="[120,80]" text="Settings" font="size:42" color="0xE8E8E8" />
-            <Label translation="[120,130]" text="Adjust display and playback" font="size:24" color="0x999999" />
-            <LabelList id="settingsList" translation="[120,180]" itemSize="[1040,64]" itemSpacing="[0,10]" drawFocusFeedback="true" />
+            <Poster loadDisplayMode="scaleToFit" width="1280" height="720" opacity="0.22" uri="pkg:/images/roughstock-bg-16x9.jpg" />
+            <Label id="settingsTitleLabel" translation="[120,50]" width="1040" font="size:44" color="0xE8E8E8" horizAlign="center" text="Roughstock TV" />
+            <LabelList id="settingsList" translation="[120,120]" itemSize="[1040,64]" itemSpacing="[0,10]" drawFocusFeedback="true" />
         </Group>
         <!-- Full-screen container for slideshow or video (shown after mode selected) -->
         <Group id="playbackGroup" visible="false" focusable="true">
@@ -43,28 +43,30 @@
                 <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1280.0, 0.0], [0.0, 0.0]]" fieldToInterp="slidePoster.translation" />
             </Animation>
         </Group>
-        <!-- Round timer screen -->
-        <Group id="timerGroup" visible="false" focusable="true">
+        <!-- Round timer: LabelList (only control that renders text on this device). centerPad() in BRS pads titles so they appear centered. -->
+        <Group id="timerScreenGroup" visible="false">
             <Rectangle id="timerBgRect" color="0x1a1a1a" width="1280" height="720" />
             <Poster id="timerBgLogo" loadDisplayMode="scaleToFit" width="1280" height="720" opacity="0.22" uri="pkg:/images/roughstock-bg-16x9.jpg" />
-            <Label id="timerPhaseLabel" translation="[240,180]" width="800" text="ROUND" font="size:28" color="0xE8E8E8" horizAlign="center" />
-            <Label id="timerCountdownLabel" translation="[240,240]" width="800" text="5:00" font="size:96" color="0xFFFFFF" horizAlign="center" />
-            <Label id="timerRoundLabel" translation="[240,380]" width="800" text="Round 1" font="size:36" color="0xE8E8E8" horizAlign="center" />
-            <Label id="timerNextRoundLabel" translation="[240,430]" width="800" text="Next round in: 0:30" font="size:28" color="0x999999" horizAlign="center" />
-            <Label id="timerClockLabel" translation="[240,500]" width="800" text="" font="size:24" color="0x999999" horizAlign="center" visible="false" />
-            <Group id="timerSponsorGroup" translation="[340,540]" visible="false">
+            <LabelList id="timerTitleList" translation="[120,50]" itemSize="[1040,48]" itemSpacing="[0,0]" focusable="false" drawFocusFeedback="false" />
+            <LabelList id="timerClockList" translation="[120,112]" itemSize="[1040,56]" itemSpacing="[0,0]" focusable="false" drawFocusFeedback="false" />
+            <LabelList id="timerCountdownList" translation="[120,188]" itemSize="[1040,56]" itemSpacing="[0,0]" focusable="false" drawFocusFeedback="false" />
+            <LabelList id="timerBodyList" translation="[120,332]" itemSize="[1040,64]" itemSpacing="[0,0]" focusable="false" drawFocusFeedback="false" />
+            <Group id="timerSponsorGroup" translation="[340,520]">
                 <Poster id="timerSponsor1" loadDisplayMode="scaleToFit" width="200" height="80" uri="pkg:/images/sponsors/sponsor1.png" />
                 <Poster id="timerSponsor2" loadDisplayMode="scaleToFit" width="200" height="80" translation="[300,0]" uri="pkg:/images/sponsors/sponsor2.png" />
             </Group>
             <Label id="timerAnnouncementsLabel" translation="[120,640]" width="1040" wrap="true" text="" font="size:22" color="0xAAAAAA" />
             <Timer id="timerTick" repeat="true" duration="1" />
         </Group>
-        <!-- Timer settings screen -->
+        <!-- Timer settings: same logo + title as main, then list -->
         <Group id="timerSettingsGroup" visible="false">
             <Rectangle color="0x1a1a1a" width="1280" height="720" />
-            <Label translation="[120,80]" text="Timer Settings" font="size:42" color="0xE8E8E8" />
-            <Label translation="[120,130]" text="Round duration, rest, display options" font="size:24" color="0x999999" />
-            <LabelList id="timerSettingsList" translation="[120,180]" itemSize="[1040,64]" itemSpacing="[0,10]" drawFocusFeedback="true" />
+            <Poster loadDisplayMode="scaleToFit" width="1280" height="720" opacity="0.22" uri="pkg:/images/roughstock-bg-16x9.jpg" />
+            <Label id="timerSettingsTitleLabel" translation="[120,50]" width="1040" font="size:44" color="0xE8E8E8" horizAlign="center" text="Roughstock TV" />
+            <LabelList id="timerSettingsList" translation="[120,120]" itemSize="[1040,64]" itemSpacing="[0,10]" drawFocusFeedback="true" />
         </Group>
+        <!-- Beep Audio at Scene level; content preloaded. BeepExtend restarts every 1s to work around 1s playback limit (3x1s = 3s). -->
+        <Audio id="timerBeep" />
+        <Timer id="timerBeepExtend" repeat="true" duration="1" />
     </children>
 </component>
